@@ -1,0 +1,4 @@
+interface:
+  display_name: "EEG 数据集信息与质量评估"
+  short_description: "分别生成 EEG 数据集信息报告或按任务组织的质量评估报告"
+  default_prompt: "使用 $eeg-preprocessing-reporter 为指定 EEG 数据集生成数据集信息报告或质量评估报告。"
