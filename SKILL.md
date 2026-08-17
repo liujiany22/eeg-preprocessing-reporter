@@ -29,7 +29,7 @@ description: 生成 EEG 数据集信息报告或质量评估报告，每次仅�
 
 根据任务类型只读取对应文件，仅生成质量评估报告，不生成数据集信息报告：
 
-- 运动想象任务：读取 [运动想象任务](references/quality-assessment/motor-imagery.md)。
+- 运动想象任务：读取 [运动想象任务](references/quality-assessment/motor-imagery/index.md)。
 - 心算任务：读取 [心算任务](references/quality-assessment/mental-arithmetic.md)。
 
 ## 报告输出边界
