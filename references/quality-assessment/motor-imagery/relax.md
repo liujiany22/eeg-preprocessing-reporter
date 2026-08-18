@@ -1,17 +1,29 @@
 # RELAX 自动推荐流程
 
-## 执行原则
+## 目录
+
+- 方法边界
+- 执行范围
+- v2.0.1 推荐配置
+- 操作流程
+- 正文输出
+- 附录输出
+- 不生成的内容
+- 来源
+
+## 方法边界
 
 - 使用 RELAX 当前稳定版本，在 MATLAB/EEGLAB 中完成清理；记录 MATLAB、EEGLAB、RELAX、PREP、FieldTrip、PICARD 和 ICLabel 的版本。
 - 从 `RELAX_SET_PARAMETERS_AND_RUN.m` 设置输入目录、电极位置、工频和输出选项，再由 `RELAX_Wrapper.m` 批量执行。
 - 当前官方仓库 v2.0.1 将 targeted wICA 标为推荐的伪迹削减方法。按该版本的自动默认分支执行，不同时启用 MWF、普通 ICLabel-wICA 或 ICA subtraction。
 - RELAX 的清理在 MATLAB/EEGLAB 中执行；全部报告图将清理前后及必要的中间 EEGLAB 数据导入 MNE 后绘制。
+- 报告图必须使用 RELAX 实际运行产生的坏道、ICA 权重、IC 源活动和清理状态；导入 MNE 后不得重新拟合 ICA 或重新判定坏道。导入前后须核对 IC 编号、Topography、源活动和事件样点。
 
 ## 执行范围
 
 1. 预处理范围包括排除后的全部被试。
-2. 全部被试除作图外使用同一操作流程。
-3. 示例被试只用于展示完整 ICA 诊断图；Bad-channel 和 IC 清理数量均以全部成功完成该流程的被试为统计单位。
+2. 全部被试使用同一版本、配置、步骤和判据；只有示例 ICA 诊断图限于调用前确认的被试。
+3. Bad-channel 和 IC 清理统计以全部进入本流程的被试为范围。成功被试进入统计分母；失败被试单列阶段和原因，不从流程记录中删除。
 
 ## v2.0.1 推荐配置
 
@@ -81,51 +93,69 @@ RELAX_cfg.Report_all_wICA_info='yes';
 2. 使用 `RELAX_EPOCH_CLEAN_DATA_FOR_ANALYSIS.m` 执行最终分段与坏 Epoch 检测，记录逐条件剔除数和保留数。
 3. 需要基线校正时使用 `RELAX_RegressionBL_Correction.m`；若数据集方法明确要求减法基线，则按原方法执行并报告偏离。
 
-## 输出
+## 正文输出
 
-输出内容只包含此流程中提及的内容，其他内容在附录或聊天中报告。
+RELAX 在正文中只输出以下内容，顺序固定：
 
-### Bad-channel metric 图
+1. **执行状态**：进入流程、成功、失败的被试数；失败阶段和原因摘要；实际 RELAX 版本；实际使用的配置分支及相对本文件推荐配置的差异。
+2. **实际流程与参数**：用一条按执行顺序排列的流程和一张参数表记录实际执行项。未启用的可选分支不展开。
+3. **Bad-channel 数据集级结果**：
+   - 逐通道坏道率及 95% Wilson 置信区间，逐点标注 `坏道被试数 / 实际含该通道且成功处理的被试数`；通道按标准布局顺序，不按坏道率排序。
+   - 使用 `mne.viz.plot_topomap()` 绘制逐通道坏道率，色标固定为 0–1；只作空间摘要，结论以点估计和置信区间为准。
+   - 逐被试坏道数与坏道比例，显示全部成功被试、中位数和 IQR，并标出 `0.10` 电极删除上限。
+4. **IC 清理数据集级结果**：
+   - 逐被试唯一被清理 IC 数与比例；所有成功被试均显示，数量使用从 0 开始的整数轴并标注精确值。
+   - 逐被试眼动、肌电及重叠类别计数使用并列点或并列柱，不使用堆叠柱。
+   - 报告唯一被清理 IC 数及比例的中位数、IQR、范围和有效被试数，并引用附录 11.2 的逐被试表。
+5. **Epoch 结果**：按条件给出最终剔除数、保留数和保留率。
 
-#### 数据整理
+RELAX targeted wICA 只清理 IC 内的目标伪迹信号，不删除整个 IC。正文和附录统一使用“被清理 IC”，不得写成“删除 IC”。唯一被清理 IC 按 IC 编号去重，不能把眼动数与肌电数直接相加。
 
-对全部纳入被试提取并保存被试 × 通道级数据：通道是否实际存在、PREP 是否判为坏道、`ProportionExtremeForEachChannel`、`ProportionOfEpochsShowingMuscleAboveThresholdPerChannel`、最终是否删除及删除原因。一个通道满足多个原因时保留全部原因。
+所有数据集级图写明进入流程被试数、成功被试数、标准通道数、RELAX 版本和配置标识。同一数据集不同流程使用相同被试顺序、通道顺序和画布规格。
 
-#### 输出的图
+## 附录输出
 
-1. **被试 × 通道 metric 热图**：分别绘制极端噪声时段比例和肌电污染 Epoch 比例。行按固定被试顺序，列按标准电极布局顺序；两项比例的色标固定为 0–1，并在色标中标明 `0.25` 和 `0.50` 判据。未采集或无法计算显示为灰色，不得填 0。
-2. **最终坏道矩阵**：被试 × 通道矩阵至少区分保留、PREP 删除、极端噪声删除、肌电删除、多原因删除和未采集。不得只展示被删除通道。
-3. **逐通道数据集统计图**：对每个通道计算 `坏道被试数 / 实际含该通道且完成处理的被试数`，绘制坏道率及二项比例的 95% Wilson 置信区间；同时标注分子和分母。通道顺序与热图一致，不按坏道率重新排序。
-4. **坏道率 Topography**：使用 MNE 的 `mne.viz.plot_topomap()` 绘制逐通道坏道率，色标固定为 0–1。该图只作为空间分布摘要，统计解释以第 3 项的点估计和置信区间为准。
-5. **逐被试坏道负担图**：每名被试显示坏道数和坏道比例，并叠加全体被试的中位数与 IQR；在比例图标出 RELAX 的 `0.10` 电极删除上限。所有被试均显示为独立点，不用只有箱线图的形式替代。
+以下内容只放在附录 11.2，正文引用而不重复：
 
-所有图标题写明纳入被试数、成功处理被试数、标准通道数和 RELAX 版本。相同数据集的不同预处理分支使用相同被试顺序、通道顺序、画布尺寸和色标。
+### 完整配置
 
-### ICA 图
+- 实际运行的核心配置代码、全部实际生效参数、软件版本和相对推荐配置的偏离。
+- 逐被试处理状态表。技术栈追踪和原始日志不写入报告。
 
-#### 示例被试的完整 ICA 诊断图
+### Bad-channel 明细
 
-对调用前确认的每个示例被试，读取报告用 ICA 中间文件，并固定输出以下内容：
+1. **逐被试逐通道表**：字段固定为通道是否实际存在、PREP 是否判坏、`ProportionExtremeForEachChannel`、`ProportionOfEpochsShowingMuscleAboveThresholdPerChannel`、最终状态和全部判定原因。
+2. **两张 metric 热图**：分别显示极端噪声时段比例和肌电污染 Epoch 比例；行列顺序固定，色标为 0–1，标出 `0.25` 和 `0.50` 判据；缺失显示为灰色。
+3. **最终坏道矩阵**：至少区分保留、PREP 删除、极端噪声删除、肌电删除、多原因删除和未采集，不得只显示坏道。
 
-1. **全部 IC 总览**：使用 MNE 绘制全部 IC 的 Topography 网格；每个 IC 显示编号，以固定边框或标题颜色区分保留、眼动清理、肌电清理和同时满足两类判据，不得只画被清理 IC。
-2. **分类与判据总览**：绘制 IC × ICLabel 类别概率热图，类别顺序固定为 Brain、Muscle、Eye、Heart、Line Noise、Channel Noise、Other；并列显示肌电频谱斜率、`-0.31` 阈值、最终清理状态和是否由 `icablinkmetrics` 补充识别。
-3. **每个被清理 IC 的五联图**：使用 MNE `ICA.plot_properties()`，完整保留 Topography、Epoch image、平均 IC 波形及置信区间、PSD、逐 Epoch 方差五部分。所有被清理 IC 均需绘制；数量过多时分页，不得只挑代表性 IC。
-4. **时序证据图**：使用 `ICA.plot_sources()` 展示被清理 IC 在整段记录和真实 Trial 内的活动；眼动 IC 标出眨眼时段，肌电 IC 的 PSD 标出 15 Hz 以及用于斜率判断的 7–70 Hz 范围。
-5. **清理效果图**：在同一伪迹时间窗内绘制清理前后通道波形和 GFP 叠加图，时间范围、通道、纵轴和颜色在示例被试之间保持一致。眼动和肌电至少各展示一个真实命中时段；不存在对应伪迹时明确标为无，不用其他时段替代。
+### 示例被试 ICA 完整诊断
 
-#### 全数据集 IC 清理统计
+对每个已确认的示例被试，使用该被试实际 RELAX 运行保存的同一 ICA 结果固定输出：
 
-1. 在报告中提供逐被试表，字段固定为：被试编号、进入 ICA 的 EEG 通道数、数据秩、IC 总数、眼动 IC 数、肌电 IC 数、同时命中两类的 IC 数、唯一被清理 IC 数、被清理 IC 比例、收敛状态和 `DataMaybeTooShortForValidICA`。
-2. RELAX targeted wICA 只清理 IC 中的目标伪迹成分，不删除整个 IC；报告中使用“被清理 IC 数”，不得写成“删除 IC 数”。唯一被清理 IC 数按 IC 编号去重，不能把眼动数与肌电数直接相加。
-3. 绘制逐被试唯一被清理 IC 数柱状或点图，横轴固定为全部被试，纵轴从 0 开始并使用整数刻度；每个被试标出精确数量。
-4. 另绘逐被试被清理 IC 比例图和眼动、肌电分类计数图。分类可能重叠，因此使用并列点或并列柱，不使用会暗示可直接求和的堆叠柱。
-5. 报告全体被试唯一被清理 IC 数和比例的中位数、IQR、范围及有效被试数；处理失败的被试单列原因，不纳入统计分母但不得从图表说明中省略。
+1. **全部 IC Topography 总览**：显示所有 IC 编号，以固定视觉编码区分保留、眼动清理、肌电清理和重叠命中；不得只画被清理 IC。
+2. **分类与判据总览**：IC × ICLabel 概率热图，类别顺序固定为 Brain、Muscle、Eye、Heart、Line Noise、Channel Noise、Other；并列显示肌电频谱斜率、`-0.31` 阈值、最终状态和 `icablinkmetrics` 补充识别状态。
+3. **全部被清理 IC 的完整属性图**：在实际 RELAX ICA 能无损映射并通过 IC 编号、Topography 和源活动核对时，使用 MNE `ICA.plot_properties()`；否则使用导出的实际 IC 源活动与权重，通过 MNE 的 Epoch、PSD 和 Topography 计算组成相同五部分，并在图注标明实现。完整保留 Topography、Epoch image、平均 IC 波形及置信区间、PSD、逐 Epoch 方差；数量过多时分页，不挑代表性 IC 代替全集。
+4. **时序证据**：使用 `ICA.plot_sources()` 展示被清理 IC 在整段记录和真实 Trial 内的活动；眼动 IC 标出实际眨眼时段，肌电 IC 标出 15 Hz 及 7–70 Hz 判定范围。
+5. **清理效果**：在同一真实伪迹时间窗绘制清理前后通道波形和 GFP；示例被试间固定时间范围、通道、纵轴和颜色。某类伪迹没有真实命中时标为无，不以其他时段代替。
+
+### 逐被试 IC 表
+
+字段固定为：被试编号、进入 ICA 的 EEG 通道数、数据秩、IC 总数、眼动 IC 数、肌电 IC 数、重叠 IC 数、唯一被清理 IC 数、被清理比例、收敛状态、`DataMaybeTooShortForValidICA`、处理状态和失败原因摘要。
+
+## 不生成的内容
+
+- 原始与 RELAX 后的波形、PSD 和分频带 Topography 只按附录 11.1 生成，不在本节重复。
+- 不根据 RELAX 结果自动给出被试排除建议、跨方法排名、综合质量分或未由实际结果支持的原因解释。
+- 没有保存相应 ICA 中间量时，相关诊断图标为未生成，不从清理后的通道数据反推 IC 结果。
+- 不为补图在 MNE 中重新拟合 ICA；重新拟合得到的成分不得标为 RELAX 的 IC。
 
 ## 来源
+
+以下链接用于约束流程，不作为固定报告章节；报告生成时按主 skill 的规定说明核查材料。
 
 - [RELAX 官方仓库](https://github.com/NeilwBailey/RELAX)
 - [RELAX 安装与运行说明](https://github.com/NeilwBailey/RELAX/wiki/1-%E2%80%90-Installing-and-Running-RELAX)
 - [RELAX 坏道与通道级指标实现](https://github.com/NeilwBailey/RELAX/blob/v2.0.1/RELAX_excluding_channels_and_epoching.m)
 - [RELAX targeted wICA 实现](https://github.com/NeilwBailey/RELAX/blob/v2.0.1/RELAX_targeted_wICA.m)
-- [RELAX Part 1 方法论文](https://github.com/NeilwBailey/RELAX/blob/v2.0.1/Bailey%20et%20al%20%282023%29%20RELAX%20part%201%20-%20algorithm%20and%20application%20to%20oscillations.pdf)
+- [RELAX Part 1 方法论文](<https://github.com/NeilwBailey/RELAX/blob/v2.0.1/Bailey%20et%20al%20%282023%29%20RELAX%20part%201%20-%20algorithm%20and%20application%20to%20oscillations.pdf>)
 - [Targeted wICA 方法](https://doi.org/10.1101/2024.06.06.597688)
