@@ -10,7 +10,7 @@
 
 ## 预处理操作流程
 
-1. 对第 3 步保留的每名被试建立 Raw、ICA、Surface Laplacian、ICA + Surface Laplacian 四个分支；联合分支的顺序固定为 ICA 后 Surface Laplacian。
+1. 对数据集信息报告初步排除后保留的每名被试建立 Raw、ICA、Surface Laplacian、ICA + Surface Laplacian 四个分支；联合分支的顺序固定为 ICA 后 Surface Laplacian。
 2. ICA 分支执行 1 Hz、5 阶 Butterworth 高通、白化和 FastICA。使用 `mne.preprocessing.ICA(method="fastica")` 时记录滤波 IIR 参数、成分数、随机种子和收敛状态。
 3. 有 EOG 时，逐 Trial 计算每个 IC 与可用 EOG 参考的 Pearson 相关；没有 EOG 时，仅使用论文或作者代码为当前电极布局指定的额区参考。把全体被试的相关值转换为 z-score，按论文的 ±3σ 规则标记 IC，并按原方法重复两次。不得自行指定额区通道名称。
 4. Surface Laplacian 分支使用球面样条 Surface Laplacian。复现论文时使用最高 Legendre 阶数 10、平滑常数 4、正则化参数 `1e-5`；若 MNE `compute_current_source_density()` 的参数化不能一一对应，记录等价关系或偏离，不声称完全复现。
@@ -33,25 +33,25 @@ SD-AR 在预处理报告中只输出：
 
 ## 质量评估报告输出
 
-SD-AR 在正文中只输出：
+SD-AR 的实际结果放入运动想象质量评估模板第 3 节的对应方法小节。以下内容作为 SD-AR 方法特异的统计与可视化：
 
 1. 执行状态、可用分支、实际参数、验证方案和相对论文流程的偏离；不能完成分支选择时明确停在哪一步。
 2. 逐被试四分支分类表现的紧凑配对图，以及每名被试最终选择的分支；不得只显示被选中分支。
 3. 全数据集四种分支的入选人数与比例，并报告并列和处理失败被试。
-4. ICA 分支的逐被试唯一删除 IC 数与比例，以及全体被试的中位数、IQR、范围和有效被试数；具体 IC 明细放附录 11.5。
+4. ICA 分支的逐被试唯一删除 IC 数与比例，以及全体被试的中位数、IQR、范围和有效被试数；具体 IC 明细放入质量评估报告附录的 SD-AR 明细中。
 5. Surface Laplacian 前后以论文指定感觉运动通道为中心的空间扩散或功能连接数据集级摘要；只陈述实际观察，不预写“改善”。
 
 ## 质量评估报告附录
 
-以下内容只放在附录 11.5：
+以下内容放在质量评估报告附录的 SD-AR 明细中：
 
 1. 逐被试分支选择表：四分支得分、最终分支、并列处理、验证方案和处理状态。
-2. 示例被试 ICA 完整诊断：全部 IC Topography、全部相关 z-score 与 ±3σ 阈值、全部排除 IC 的 MNE `ICA.plot_properties()`、`ICA.plot_sources()` 和处理前后 overlay；不得只画代表性 IC。
+2. 有明确观察理由的单独被试 ICA 完整诊断：仅在数据集级统计发现明确异常、判据需要复核或用户指定时，输出全部 IC Topography、全部相关 z-score 与 ±3σ 阈值、全部排除 IC 的 MNE `ICA.plot_properties()`、`ICA.plot_sources()` 和处理前后 overlay；不得只画代表性 IC。
 3. 逐被试 IC 表：IC 总数、各参考命中数、唯一删除数、删除比例、收敛状态和失败原因摘要。
 4. Raw 与 Surface Laplacian 的功能连接矩阵、头皮连接图，以及论文规定的感觉运动通道空间扩散对比；比较图固定通道顺序和色标。
 5. μ、低 β、中 β、高 β 下实际计算的 LDA relevance 或功能连接图；没有实现的指标不以其他指标替代。
 
-附录 11.1 另行对四个分支中实际产生的预处理数据分别重复波形、PSD 和 Topography，不在附录 11.5 重复。
+四个分支中实际产生的预处理数据按质量评估主模板生成适用的常规图和运动想象任务特异图，不在 SD-AR 方法特异明细中重复。
 
 ## 不生成的内容
 
